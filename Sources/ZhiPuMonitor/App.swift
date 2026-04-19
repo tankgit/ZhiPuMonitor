@@ -745,9 +745,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     func openSettingsWindow() {
         if let panel = settingsPanel {
-            panel.makeKeyAndOrderFront(nil)
-            return
+            panel.close()
+            settingsPanel = nil
         }
+
+        // Activate app so the panel appears on the current Space
+        NSApp.activate(ignoringOtherApps: true)
 
         let settingsView = SettingsPanelContent(viewModel: viewModel)
         let hosting = NSHostingView(rootView: settingsView)
@@ -762,9 +765,20 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         panel.contentView = hosting
         panel.isFloatingPanel = true
         panel.level = .floating
-        panel.center()
         panel.isReleasedWhenClosed = false
         panel.delegate = self
+
+        // Center on the screen where the mouse currently is
+        let mouse = NSEvent.mouseLocation
+        let targetScreen = NSScreen.screens.first { $0.frame.contains(mouse) } ?? NSScreen.main
+        if let screen = targetScreen {
+            let visible = screen.visibleFrame
+            panel.setFrameOrigin(NSPoint(
+                x: visible.midX - 160,
+                y: visible.midY - 260
+            ))
+        }
+
         self.settingsPanel = panel
         panel.orderFront(nil)
     }

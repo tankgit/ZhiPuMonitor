@@ -1465,11 +1465,14 @@ struct ProgressBar: View {
 private var settingsWindowRef: NSWindow?
 
 func showSettingsWindow(viewModel: UsageViewModel) {
-    // If window already exists, just bring it forward
+    // Close existing window so a fresh one is created on the current Space
     if let existing = settingsWindowRef {
-        existing.makeKeyAndOrderFront(nil)
-        return
+        existing.close()
+        settingsWindowRef = nil
     }
+
+    // Activate app so window lands on the current Space
+    NSApp.activate(ignoringOtherApps: true)
 
     let view = SettingsPanelContent(viewModel: viewModel)
     let hosting = NSHostingView(rootView: view)
@@ -1482,10 +1485,19 @@ func showSettingsWindow(viewModel: UsageViewModel) {
     window.titlebarAppearsTransparent = true
     window.title = L.settings
     window.contentView = hosting
-    window.center()
     window.isReleasedWhenClosed = false
 
-    // Store reference so we can reuse it
+    // Center on the screen where the mouse currently is
+    let mouse = NSEvent.mouseLocation
+    let targetScreen = NSScreen.screens.first { $0.frame.contains(mouse) } ?? NSScreen.main
+    if let screen = targetScreen {
+        let visible = screen.visibleFrame
+        window.setFrameOrigin(NSPoint(
+            x: visible.midX - 160,
+            y: visible.midY - 230
+        ))
+    }
+
     settingsWindowRef = window
 
     window.orderFrontRegardless()
