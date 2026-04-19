@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="Sources/ZhiPuMonitor/Resources/AppIcon.png" width="128" height="128" alt="ZBar Icon" style="border-radius: 24px;">
+  <img src="docs/icon_rounded.png" width="128" height="128" alt="ZBar Icon">
 </p>
 
 <h1 align="center">ZBar</h1>
@@ -25,6 +25,12 @@
 </p>
 
 ---
+
+## Backstory
+
+This project was born on a train ride to Aranya. While vibe coding on the way, I realized my ZhiPu Coding Plan quota was running low — and checking usage meant logging into their website every time. There wasn't a good native tool for monitoring ZhiPu Coding Plan usage on macOS, so I spent about half a day vibing one into existence.
+
+There are no major iteration plans for this project going forward, but it will serve as the foundation for a more polished product down the road.
 
 ## Features
 

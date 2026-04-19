@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="Sources/ZhiPuMonitor/Resources/AppIcon.png" width="128" height="128" alt="ZBar Icon" style="border-radius: 24px;">
+  <img src="docs/icon_rounded.png" width="128" height="128" alt="ZBar Icon">
 </p>
 
 <h1 align="center">ZBar</h1>
@@ -25,6 +25,12 @@
 </p>
 
 ---
+
+## 前言
+
+这个项目诞生在去阿那亚玩的火车上。一路上 vibe coding，突然发现自己的智谱编码套餐快用完了——每次都得登录官网查用量，非常麻烦。市面上也没找到好用的智谱 Coding Plan 用量监控工具，于是顺手花了大半天 vibe 了一个出来。
+
+后续没有大的迭代计划，但会基于这个项目开启一个更完善的新产品。
 
 ## 功能特性
 
