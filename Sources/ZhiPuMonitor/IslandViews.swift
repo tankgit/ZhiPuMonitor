@@ -142,8 +142,8 @@ struct HotkeyRecorderView: View {
                 .frame(minWidth: 120, alignment: .leading)
 
             Button(action: toggleRecording) {
-                Text(isRecording ? "✕" : L.hotkeyRecord)
-                    .font(.system(size: 10, weight: .medium))
+                Image(systemName: isRecording ? "xmark.circle" : "record.circle")
+                    .font(.system(size: 14))
                     .foregroundColor(isRecording ? .red : .accentColor)
             }
             .buttonStyle(.plain)

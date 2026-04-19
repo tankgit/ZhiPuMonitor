@@ -564,9 +564,6 @@ private struct GeneralSettingsView: View {
 
             // Island Mode
             VStack(alignment: .leading, spacing: 8) {
-                Text(L.islandMode)
-                    .font(.system(size: 12, weight: .medium))
-
                 HStack {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(L.islandMode)
