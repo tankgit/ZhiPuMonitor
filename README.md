@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="Sources/ZhiPuMonitor/Resources/AppIcon.png" width="128" height="128" alt="ZBar Icon">
+  <img src="Sources/ZhiPuMonitor/Resources/AppIcon.png" width="128" height="128" alt="ZBar Icon" style="border-radius: 24px;">
 </p>
 
 <h1 align="center">ZBar</h1>
@@ -18,6 +18,10 @@
   <img src="https://img.shields.io/badge/SwiftUI-Native-green?style=flat-square" alt="SwiftUI">
   <img src="https://img.shields.io/github/license/tankgit/ZhiPuMonitor?style=flat-square" alt="License">
   <img src="https://img.shields.io/badge/PRs-Welcome-brightgreen?style=flat-square" alt="PRs Welcome">
+</p>
+
+<p align="center">
+  <a href="./README.md">English</a> · <a href="./README_zh.md">中文</a>
 </p>
 
 ---
@@ -44,19 +48,27 @@
 
 ## Screenshots
 
-### Notch Mode — Overview
+### Notch Mode — Hover & Expand
+
+Hover over the notch area to see real-time usage percentages for each quota. Click to expand the full monitoring panel with progress bars, safety badges, and the animated mascot.
 
 <img src="docs/zbar_overall.gif" width="600" alt="Notch Mode Overview">
 
-### Island Mode — Overview
+### Island Mode — Capsule Bar
+
+Enable Island Mode to show a floating capsule bar below the menu bar. It displays ring indicators for 5-hour and weekly quotas, plus the mascot — all without interfering with other notch apps.
 
 <img src="docs/zbar_island_overall.gif" width="600" alt="Island Mode Overview">
 
-### Island Mode — Show / Hide
+### Island Mode — Global Hotkey Toggle
+
+Press the customizable global hotkey (default `Ctrl`+`Option`+`0`) to instantly show or hide the capsule bar, with a smooth slide animation. Works system-wide, no matter which app you're in.
 
 <img src="docs/zbar_island_toggle.gif" width="600" alt="Island Mode Toggle">
 
-### Little Monsters
+### Mascot States
+
+The pixel-art monster reacts to your usage: happy dancing when safe, sweating when approaching limits, and flickering when exhausted. Its color shifts from green → orange → red as usage rises.
 
 <img src="docs/zbar_little_monsters.gif" width="300" alt="Little Monsters">
 
@@ -64,15 +76,17 @@
 
 > **Apple Silicon (M1/M2/M3/M4) only** — macOS 13 Ventura or later required.
 
-Download the latest release from the [Releases](https://github.com/tankgit/ZhiPuMonitor/releases/latest) page.
+### AI-Assisted Install
 
-### Quick Install
+Copy the prompt below and paste it to any AI assistant (Claude, ChatGPT, etc.) — it will guide you through the installation:
 
-```bash
-# Download and install to /Applications
-curl -L https://github.com/tankgit/ZhiPuMonitor/releases/latest/download/ZBar.app.zip -o ~/Downloads/ZBar.app.zip
-unzip ~/Downloads/ZBar.app.zip -d /Applications/
 ```
+Help me install ZBar, a macOS menu bar app. Read the instructions from this GitHub README and guide me step by step: https://github.com/tankgit/ZhiPuMonitor/blob/main/README.md
+```
+
+### Manual Install
+
+Download the latest release from the [Releases](https://github.com/tankgit/ZhiPuMonitor/releases/latest) page, then drag `ZBar.app` to `/Applications`.
 
 ## Getting Started
 
@@ -97,18 +111,6 @@ Click the gear icon in the expanded panel, or right-click the island capsule →
 | Click notch / capsule | Expand full monitoring panel |
 | Press hotkey | Show / hide island capsule |
 | Right-click island view | Context menu (toggle, settings, quit) |
-
-## Build from Source
-
-Requires Xcode Command Line Tools and Swift 5.9+.
-
-```bash
-git clone https://github.com/tankgit/ZhiPuMonitor.git
-cd ZhiPuMonitor
-swift build -c release
-```
-
-The binary will be at `.build/release/ZhiPuMonitor`.
 
 ## Tech Stack
 
