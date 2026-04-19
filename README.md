@@ -24,6 +24,10 @@
   <a href="./README.md">English</a> · <a href="./README_zh.md">中文</a>
 </p>
 
+<p align="center">
+  <img src="docs/zbar_overall.gif" width="600" alt="ZBar Preview">
+</p>
+
 ---
 
 ## Backstory
