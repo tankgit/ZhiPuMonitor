@@ -135,11 +135,26 @@ struct HotkeyRecorderView: View {
     @State private var localMonitor: Any?
 
     var body: some View {
-        HStack(spacing: 8) {
-            Text(isRecording ? L.hotkeyRecording : displayText)
-                .font(.system(size: 11, weight: isRecording ? .medium : .regular, design: .monospaced))
-                .foregroundColor(isRecording ? .orange : .secondary)
-                .frame(minWidth: 120, alignment: .leading)
+        HStack(spacing: 4) {
+            Spacer()
+
+            if isRecording {
+                Text(L.hotkeyRecording)
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(.orange)
+            } else {
+                ForEach(Array(displayText.split(separator: " ").enumerated()), id: \.offset) { _, part in
+                    Text(String(part))
+                        .font(.system(size: 11, weight: .medium, design: .monospaced))
+                        .foregroundColor(.primary)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(
+                            RoundedRectangle(cornerRadius: 4)
+                                .fill(Color.primary.opacity(0.08))
+                        )
+                }
+            }
 
             Button(action: toggleRecording) {
                 Image(systemName: isRecording ? "xmark.circle" : "record.circle")
@@ -213,12 +228,12 @@ struct HotkeyHelper {
     static func toString(modifiers: UInt, keycode: UInt16) -> String {
         var parts: [String] = []
         let flags = NSEvent.ModifierFlags(rawValue: modifiers)
-        if flags.contains(.control) { parts.append("Ctrl") }
-        if flags.contains(.option) { parts.append("Opt") }
-        if flags.contains(.shift) { parts.append("Shift") }
-        if flags.contains(.command) { parts.append("Cmd") }
+        if flags.contains(.control) { parts.append("⌃") }
+        if flags.contains(.option) { parts.append("⌥") }
+        if flags.contains(.shift) { parts.append("⇧") }
+        if flags.contains(.command) { parts.append("⌘") }
         parts.append(keyToString(keycode))
-        return parts.joined(separator: " + ")
+        return parts.joined(separator: " ")
     }
 
     static func keyToString(_ keycode: UInt16) -> String {

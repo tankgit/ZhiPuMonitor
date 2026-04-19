@@ -168,4 +168,16 @@ struct L {
     static var helpColorSafe: String { isEN ? "Below orange threshold — safe zone" : "低于橙色阈值 — 安全区" }
     static var helpColorWarn: String { isEN ? "Between orange and red threshold — warning zone" : "介于橙色和红色阈值之间 — 警告区" }
     static var helpColorDanger: String { isEN ? "Above red threshold — danger zone" : "超过红色阈值 — 危险区" }
+
+    // MARK: - Help: Island Mode
+
+    static var helpIslandTitle: String { isEN ? "Island Mode" : "离岛模式" }
+    static var helpIslandDesc: String {
+        isEN
+            ? "If other notch-based apps overlap with ZBar, switch to Island Mode — a capsule bar floating below the menu bar."
+            : "如果其他刘海附近的应用与 ZBar 冲突，可以开启离岛模式 — 在菜单栏下方显示独立的胶囊条。"
+    }
+    static var helpIslandToggle: String { isEN ? "Enable in Settings → General" : "在 设置 → 通用 中开启" }
+    static var helpIslandHotkey: String { isEN ? "Press the shortcut to show / hide the capsule bar" : "按下快捷键可显示或隐藏胶囊条" }
+    static var helpIslandClick: String { isEN ? "Click the capsule to expand full details" : "点击胶囊条可展开完整详情" }
 }

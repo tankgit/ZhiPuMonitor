@@ -317,8 +317,6 @@ struct ExpandedContentView: View {
     }
 }
 
-// MARK: - App Version
-
 let appVersion = "1.0.0"
 
 // MARK: - Settings Tab Button
@@ -338,12 +336,14 @@ private struct SettingsTabButton: View {
                     Text(title)
                         .font(.system(size: 12, weight: .medium))
                 }
-                .foregroundColor(isSelected ? .accentColor : .secondary)
+                .foregroundColor(isSelected ? .white : .secondary)
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 8)
-                Rectangle()
-                    .fill(isSelected ? Color.accentColor : Color.clear)
-                    .frame(height: 2)
+                .padding(.vertical, 10)
+                .padding(.horizontal, 8)
+                .background(
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(isSelected ? Color.accentColor : Color.primary.opacity(0.06))
+                )
             }
         }
         .buttonStyle(.plain)
@@ -405,8 +405,11 @@ private struct GeneralSettingsView: View {
     @AppStorage("launch_at_login") private var launchAtLogin: Bool = false
     @AppStorage("threshold_orange") private var thresholdOrange: Int = 60
     @AppStorage("threshold_red") private var thresholdRed: Int = 85
+    @State private var prevOrange: Int = 60
+    @State private var prevRed: Int = 85
     @State private var inputKey = ""
     @State private var saveMessage = ""
+    @State private var isUpdating = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -418,20 +421,27 @@ private struct GeneralSettingsView: View {
                     SecureField(L.apiKeyPlaceholder, text: $inputKey)
                         .textFieldStyle(.roundedBorder)
                         .font(.system(size: 12))
-                    Button(L.update) {
-                        guard !inputKey.isEmpty else { return }
+                        .disabled(isUpdating)
+                    Button(isUpdating ? L.saving : L.update) {
+                        guard !inputKey.isEmpty, !isUpdating else { return }
+                        let oldKey = viewModel.apiKey
                         viewModel.apiKey = inputKey
                         saveMessage = L.saving
+                        isUpdating = true
                         Task {
                             await viewModel.fetchUsage()
+                            isUpdating = false
                             if viewModel.errorMessage != nil {
+                                // Revert on failure
+                                viewModel.apiKey = oldKey
+                                inputKey = oldKey
                                 saveMessage = L.connectFailed
-                            } else if viewModel.hasApiKey {
+                            } else {
                                 saveMessage = L.updateSuccess
                             }
                         }
                     }
-                    .disabled(inputKey.isEmpty)
+                    .disabled(inputKey.isEmpty || isUpdating)
                 }
                 HStack(spacing: 2) {
                     Text(L.noApiKey)
@@ -477,11 +487,16 @@ private struct GeneralSettingsView: View {
                         Text(L.orangeAlert)
                             .font(.system(size: 10, weight: .medium))
                             .foregroundColor(.orange)
-                        TextField("", value: $thresholdOrange, format: .number)
-                            .textFieldStyle(.roundedBorder)
-                            .font(.system(size: 12))
-                            .frame(width: 52)
-                            .multilineTextAlignment(.center)
+                        HStack(spacing: 2) {
+                            TextField("", value: $thresholdOrange, format: .number)
+                                .textFieldStyle(.roundedBorder)
+                                .font(.system(size: 12))
+                                .frame(width: 44)
+                                .multilineTextAlignment(.trailing)
+                            Text("%")
+                                .font(.system(size: 12))
+                                .foregroundColor(.secondary)
+                        }
                     }
                     .frame(maxWidth: .infinity)
 
@@ -489,11 +504,16 @@ private struct GeneralSettingsView: View {
                         Text(L.redAlert)
                             .font(.system(size: 10, weight: .medium))
                             .foregroundColor(.red)
-                        TextField("", value: $thresholdRed, format: .number)
-                            .textFieldStyle(.roundedBorder)
-                            .font(.system(size: 12))
-                            .frame(width: 52)
-                            .multilineTextAlignment(.center)
+                        HStack(spacing: 2) {
+                            TextField("", value: $thresholdRed, format: .number)
+                                .textFieldStyle(.roundedBorder)
+                                .font(.system(size: 12))
+                                .frame(width: 44)
+                                .multilineTextAlignment(.trailing)
+                            Text("%")
+                                .font(.system(size: 12))
+                                .foregroundColor(.secondary)
+                        }
                     }
                     .frame(maxWidth: .infinity)
                 }
@@ -598,6 +618,24 @@ private struct GeneralSettingsView: View {
         .padding(20)
         .onAppear {
             inputKey = viewModel.apiKey
+            prevOrange = thresholdOrange
+            prevRed = thresholdRed
+        }
+        .onDisappear {
+            // Revert thresholds to last valid values if current values are invalid
+            if thresholdOrange <= 0 || thresholdOrange > 100 {
+                thresholdOrange = prevOrange
+            } else {
+                prevOrange = thresholdOrange
+            }
+            if thresholdRed <= 0 || thresholdRed > 100 {
+                thresholdRed = prevRed
+            } else {
+                prevRed = thresholdRed
+            }
+            if thresholdRed < thresholdOrange {
+                thresholdRed = prevRed
+            }
         }
     }
 }
@@ -1025,9 +1063,97 @@ private struct HelpView: View {
                 }
             }
 
+            Divider()
+
+            // Island mode
+            VStack(alignment: .leading, spacing: 10) {
+                Text(L.helpIslandTitle)
+                    .font(.system(size: 13, weight: .semibold))
+                Text(L.helpIslandDesc)
+                    .font(.system(size: 10))
+                    .foregroundColor(.secondary)
+
+                tipWithPreview(text: L.helpIslandToggle) {
+                    Image(systemName: "gearshape")
+                        .font(.system(size: 14))
+                        .foregroundColor(.secondary)
+                }
+                tipWithPreview(text: L.helpIslandHotkey) {
+                    miniIslandCapsule()
+                }
+                tipWithPreview(text: L.helpIslandClick) {
+                    miniIslandExpanded()
+                }
+            }
+
             Spacer()
         }
         .padding(20)
+    }
+
+    // Mini mockup: island capsule bar
+    private func miniIslandCapsule() -> some View {
+        Canvas { ctx, size in
+            let w = size.width
+            let h = size.height
+            // Menu bar
+            ctx.fill(Path(CGRect(x: 0, y: 0, width: w, height: 14)), with: .color(Color(white: 0.15)))
+            // Capsule bar below menu bar
+            let capW: CGFloat = 72
+            let capH: CGFloat = 14
+            let cx = (w - capW) / 2
+            let cy: CGFloat = 19
+            ctx.fill(Path(roundedRect: CGRect(x: cx, y: cy, width: capW, height: capH), cornerRadius: 7), with: .color(.black))
+            // Left ring
+            let ringR: CGFloat = 4
+            ctx.stroke(Ellipse().path(in: CGRect(x: cx + 7 - ringR, y: cy + capH / 2 - ringR, width: ringR * 2, height: ringR * 2)),
+                       with: .color(.green), lineWidth: 1.2)
+            // Mascot dot
+            ctx.fill(Ellipse().path(in: CGRect(x: w / 2 - 2, y: cy + capH / 2 - 2, width: 4, height: 4)), with: .color(.orange))
+            // Right ring
+            ctx.stroke(Ellipse().path(in: CGRect(x: cx + capW - 7 - ringR, y: cy + capH / 2 - ringR, width: ringR * 2, height: ringR * 2)),
+                       with: .color(.orange), lineWidth: 1.2)
+            // Shortcut badge
+            ctx.draw(Text("⌃⌥0").font(.system(size: 6, weight: .medium, design: .monospaced)).foregroundColor(.secondary),
+                     at: CGPoint(x: w / 2, y: cy + capH + 8))
+        }
+        .frame(width: 100, height: 44)
+        .clipShape(RoundedRectangle(cornerRadius: 6))
+    }
+
+    // Mini mockup: island expanded
+    private func miniIslandExpanded() -> some View {
+        Canvas { ctx, size in
+            let w = size.width
+            let h = size.height
+            // Menu bar
+            ctx.fill(Path(CGRect(x: 0, y: 0, width: w, height: 10)), with: .color(Color(white: 0.15)))
+            // Expanded card
+            let cardW: CGFloat = 90
+            let cardH: CGFloat = 32
+            let cardX = (w - cardW) / 2
+            let cardY: CGFloat = 12
+            ctx.fill(Path(roundedRect: CGRect(x: cardX, y: cardY, width: cardW, height: cardH), cornerRadius: 5), with: .color(.black))
+            // Rings
+            let ringR: CGFloat = 3
+            ctx.stroke(Ellipse().path(in: CGRect(x: cardX + 7 - ringR, y: cardY + 5 - ringR, width: ringR * 2, height: ringR * 2)),
+                       with: .color(.green), lineWidth: 1)
+            ctx.stroke(Ellipse().path(in: CGRect(x: cardX + cardW - 7 - ringR, y: cardY + 5 - ringR, width: ringR * 2, height: ringR * 2)),
+                       with: .color(.orange), lineWidth: 1)
+            // Progress bars
+            for i in 0..<3 {
+                let barY = cardY + 13 + CGFloat(i) * 6
+                let barW = cardW - 14
+                ctx.fill(Path(roundedRect: CGRect(x: cardX + 7, y: barY, width: barW, height: 3), cornerRadius: 1.5),
+                         with: .color(Color.white.opacity(0.1)))
+                let fills: [CGFloat] = [0.45, 0.32, 0.12]
+                let colors: [Color] = [.green, .orange, .green]
+                ctx.fill(Path(roundedRect: CGRect(x: cardX + 7, y: barY, width: barW * fills[i], height: 3), cornerRadius: 1.5),
+                         with: .color(colors[i]))
+            }
+        }
+        .frame(width: 100, height: 44)
+        .clipShape(RoundedRectangle(cornerRadius: 6))
     }
 
     private func monsterCard(state: MascotState, color: Color, colorName: String, name: String, desc: String, percentage: Int = 30) -> some View {
