@@ -654,9 +654,18 @@ private struct AboutView: View {
             Spacer().frame(height: 8)
 
             // App icon
-            Image(systemName: "chart.bar.doc.horizontal")
-                .font(.system(size: 36))
-                .foregroundColor(.accentColor)
+            if let path = Bundle.module.path(forResource: "AppIcon", ofType: "png"),
+               let nsImage = NSImage(contentsOfFile: path) {
+                Image(nsImage: nsImage)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 64, height: 64)
+                    .clipShape(RoundedRectangle(cornerRadius: 14))
+            } else {
+                Image(systemName: "chart.bar.doc.horizontal")
+                    .font(.system(size: 36))
+                    .foregroundColor(.accentColor)
+            }
 
             // App name
             Text("ZBar")

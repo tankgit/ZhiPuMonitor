@@ -2,6 +2,7 @@ import SwiftUI
 import Combine
 import IOKit
 import ServiceManagement
+import Carbon
 
 @main
 struct ZhiPuMonitorApp: App {
@@ -129,9 +130,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var localMouseMonitor: Any?
     private var cancellables = Set<AnyCancellable>()
 
-    // Hotkey
-    private var hotkeyGlobalMonitor: Any?
-    private var hotkeyLocalMonitor: Any?
+    // Hotkey (Carbon API for true global hotkey)
+    private var carbonHotKeyRef: EventHotKeyRef?
+    private var carbonEventHandlerRef: EventHandlerRef?
+    private var hotkeyNSEventGlobal: Any?
+    private var hotkeyNSEventLocal: Any?
+
+    // Context menu: track previous frontmost app to restore after menu action
+    private var lastFrontApp: NSRunningApplication?
 
     private let expandedWidth: CGFloat = 420
     /// Compact width = notch width + space for ring indicators on each side
@@ -194,8 +200,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationWillTerminate(_ notification: Notification) {
         if let m = globalMouseMonitor { NSEvent.removeMonitor(m) }
         if let m = localMouseMonitor { NSEvent.removeMonitor(m) }
-        if let m = hotkeyGlobalMonitor { NSEvent.removeMonitor(m) }
-        if let m = hotkeyLocalMonitor { NSEvent.removeMonitor(m) }
+        unregisterGlobalHotkey()
         refreshTimer?.invalidate()
     }
 
@@ -301,6 +306,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             self?.handleClick()
             return event
         }
+        // Right-click: island context menu
+        NSEvent.addLocalMonitorForEvents(matching: [.rightMouseDown]) { [weak self] event in
+            self?.handleRightClick()
+            return event
+        }
+        NSEvent.addGlobalMonitorForEvents(matching: [.rightMouseDown]) { [weak self] _ in
+            self?.handleRightClick()
+        }
     }
 
     private func handleMouseMoved() {
@@ -368,6 +381,82 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 guard !state.isExpanded, state.isHovered, viewModel.hasApiKey else { return }
                 expand()
             }
+        }
+    }
+
+    // MARK: - Right-click Context Menu
+
+    private func handleRightClick() {
+        guard islandState.isEnabled, islandState.isBarVisible, let ip = islandPanel else { return }
+        let mouse = NSEvent.mouseLocation
+        guard ip.frame.contains(mouse) else { return }
+        showIslandContextMenu(at: mouse)
+    }
+
+    private func showIslandContextMenu(at point: NSPoint) {
+        // Save the previously active app so we can restore it after menu action
+        if let front = NSWorkspace.shared.frontmostApplication,
+           front.bundleIdentifier != Bundle.main.bundleIdentifier {
+            lastFrontApp = front
+        }
+
+        // Build hotkey string
+        let modsRaw = UserDefaults.standard.integer(forKey: "island_hotkey_modifiers")
+        let kcRaw = UserDefaults.standard.integer(forKey: "island_hotkey_keycode")
+        let effectiveMods: UInt = modsRaw == 0
+            ? (NSEvent.ModifierFlags.control.rawValue | NSEvent.ModifierFlags.option.rawValue)
+            : UInt(modsRaw)
+        let effectiveKC: UInt16 = kcRaw == 0 ? 0x1D : UInt16(kcRaw)
+        let hotkeyStr = HotkeyHelper.toString(modifiers: effectiveMods, keycode: effectiveKC)
+
+        let menu = NSMenu()
+
+        // Toggle capsule
+        let toggleTitle = islandState.isBarVisible ? "\(L.hideCapsule)\t\(hotkeyStr)" : "\(L.showCapsule)\t\(hotkeyStr)"
+        let toggleItem = NSMenuItem(title: toggleTitle, action: #selector(menuToggleIslandBar(_:)), keyEquivalent: "")
+        toggleItem.target = self
+        menu.addItem(toggleItem)
+
+        menu.addItem(NSMenuItem.separator())
+
+        // Settings
+        let settingsItem = NSMenuItem(title: L.settings, action: #selector(menuOpenSettings(_:)), keyEquivalent: "")
+        settingsItem.target = self
+        menu.addItem(settingsItem)
+
+        menu.addItem(NSMenuItem.separator())
+
+        // Quit
+        let quitItem = NSMenuItem(title: L.quitApp, action: #selector(menuQuitApp(_:)), keyEquivalent: "")
+        quitItem.target = self
+        menu.addItem(quitItem)
+
+        menu.popUp(positioning: nil, at: point, in: nil)
+    }
+
+    @objc private func menuToggleIslandBar(_ sender: Any) {
+        let appToRestore = lastFrontApp
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            if self.islandState.isExpanded {
+                self.islandCollapseAll()
+            } else {
+                self.toggleIslandBar()
+            }
+            // Restore previous app activation so global hotkey monitor works
+            appToRestore?.activate()
+        }
+    }
+
+    @objc private func menuOpenSettings(_ sender: Any) {
+        DispatchQueue.main.async { [weak self] in
+            self?.openSettingsWindow()
+        }
+    }
+
+    @objc private func menuQuitApp(_ sender: Any) {
+        DispatchQueue.main.async {
+            NSApp.terminate(nil)
         }
     }
 
@@ -583,33 +672,88 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - Global Hotkey
 
     private func registerGlobalHotkey() {
+        unregisterGlobalHotkey()
+
         let modsRaw = UserDefaults.standard.integer(forKey: "island_hotkey_modifiers")
         let kcRaw = UserDefaults.standard.integer(forKey: "island_hotkey_keycode")
         let effectiveMods: NSEvent.ModifierFlags = modsRaw == 0
             ? [.control, .option]
             : NSEvent.ModifierFlags(rawValue: UInt(modsRaw))
-        let effectiveKC: UInt16 = kcRaw == 0 ? 0x1D : UInt16(kcRaw)
+        let effectiveKC: UInt32 = kcRaw == 0 ? 0x1A : UInt32(kcRaw)
 
-        hotkeyGlobalMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
-            if event.modifierFlags.intersection(.deviceIndependentFlagsMask) == effectiveMods,
-               event.keyCode == effectiveKC {
-                self?.handleHotkey()
+        // Convert NSEvent modifier flags to Carbon modifier flags
+        var carbonMods: UInt32 = 0
+        if effectiveMods.contains(.control) { carbonMods |= 0x1000 }
+        if effectiveMods.contains(.option)  { carbonMods |= 0x0800 }
+        if effectiveMods.contains(.shift)   { carbonMods |= 0x0200 }
+        if effectiveMods.contains(.command) { carbonMods |= 0x0100 }
+
+        // Register Carbon event handler for hotkey press
+        var eventType = EventTypeSpec(
+            eventClass: OSType(kEventClassKeyboard),
+            eventKind: OSType(kEventHotKeyPressed)
+        )
+
+        let handler: EventHandlerUPP = { _, _, userData -> OSStatus in
+            guard let userData else { return OSStatus(eventNotHandledErr) }
+            let delegate = Unmanaged<AppDelegate>.fromOpaque(userData).takeUnretainedValue()
+            DispatchQueue.main.async {
+                delegate.handleHotkey()
             }
+            return noErr
         }
 
-        hotkeyLocalMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
-            if event.modifierFlags.intersection(.deviceIndependentFlagsMask) == effectiveMods,
-               event.keyCode == effectiveKC {
-                self?.handleHotkey()
-                return nil  // consume
+        InstallEventHandler(
+            GetApplicationEventTarget(),
+            handler,
+            1,
+            &eventType,
+            Unmanaged.passUnretained(self).toOpaque(),
+            &carbonEventHandlerRef
+        )
+
+        // Register the system-wide hotkey
+        var hotKeyID = EventHotKeyID(signature: 0x5A426172, id: 1) // 'ZBar'
+        let status = RegisterEventHotKey(
+            effectiveKC,
+            carbonMods,
+            hotKeyID,
+            GetApplicationEventTarget(),
+            0,
+            &carbonHotKeyRef
+        )
+
+        if status != noErr {
+            // Carbon failed, fall back to NSEvent monitors
+            let kc16 = UInt16(effectiveKC)
+            hotkeyNSEventGlobal = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
+                if event.modifierFlags.intersection(.deviceIndependentFlagsMask) == effectiveMods,
+                   event.keyCode == kc16 {
+                    self?.handleHotkey()
+                }
             }
-            return event
+            hotkeyNSEventLocal = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+                if event.modifierFlags.intersection(.deviceIndependentFlagsMask) == effectiveMods,
+                   event.keyCode == kc16 {
+                    self?.handleHotkey()
+                    return nil
+                }
+                return event
+            }
         }
     }
 
     private func unregisterGlobalHotkey() {
-        if let m = hotkeyGlobalMonitor { NSEvent.removeMonitor(m); hotkeyGlobalMonitor = nil }
-        if let m = hotkeyLocalMonitor { NSEvent.removeMonitor(m); hotkeyLocalMonitor = nil }
+        if let ref = carbonHotKeyRef {
+            UnregisterEventHotKey(ref)
+            carbonHotKeyRef = nil
+        }
+        if let handler = carbonEventHandlerRef {
+            RemoveEventHandler(handler)
+            carbonEventHandlerRef = nil
+        }
+        if let m = hotkeyNSEventGlobal { NSEvent.removeMonitor(m); hotkeyNSEventGlobal = nil }
+        if let m = hotkeyNSEventLocal { NSEvent.removeMonitor(m); hotkeyNSEventLocal = nil }
     }
 
     private func handleHotkey() {

@@ -113,6 +113,12 @@ struct L {
     static var hotkeyRecording: String { isEN ? "Press new shortcut…" : "请按下新快捷键…" }
     static var hotkeyDefault: String { isEN ? "Ctrl + Opt + 0" : "Ctrl + Opt + 0" }
 
+    // MARK: - Context Menu (Island Mode)
+
+    static var hideCapsule: String { isEN ? "Hide Capsule" : "隐藏胶囊" }
+    static var showCapsule: String { isEN ? "Show Capsule" : "显示胶囊" }
+    static var quitApp: String { isEN ? "Quit ZBar" : "退出 ZBar" }
+
     // MARK: - Error Messages (ZhiPuService)
 
     static var apiKeyNotSet: String { isEN ? "API Key not set" : "未设置 API Key" }

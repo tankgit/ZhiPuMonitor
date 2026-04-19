@@ -172,7 +172,7 @@ struct HotkeyRecorderView: View {
         let mods = UserDefaults.standard.integer(forKey: "island_hotkey_modifiers")
         let kc = UserDefaults.standard.integer(forKey: "island_hotkey_keycode")
         let effectiveMods: UInt = mods == 0 ? (NSEvent.ModifierFlags.control.rawValue | NSEvent.ModifierFlags.option.rawValue) : UInt(mods)
-        let effectiveKC: UInt16 = kc == 0 ? 0x1D : UInt16(kc)
+        let effectiveKC: UInt16 = kc == 0 ? 0x1A : UInt16(kc)
         displayText = HotkeyHelper.toString(modifiers: effectiveMods, keycode: effectiveKC)
     }
 
