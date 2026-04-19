@@ -12,31 +12,32 @@ struct IslandRootView: View {
     private let noKeyContentHeight: CGFloat = 100
 
     var body: some View {
-        VStack(spacing: 0) {
-            // Capsule bar
+        // ZStack isolates the bar layer from expanded content layer changes.
+        // When expanded content appears via `if`, the bar layer is unaffected.
+        ZStack(alignment: .topLeading) {
+            // Bar layer — always at top, independent of expanded content
             IslandBarView(viewModel: viewModel, islandState: islandState)
                 .frame(height: barHeight)
+                .frame(maxWidth: .infinity)
 
-            // Expanded content — present when expanded, ClipView reveals as panel frame grows
+            // Expanded content layer — starts below bar
             if islandState.isExpanded {
                 let contentHeight = viewModel.hasApiKey ? expandedContentHeight : noKeyContentHeight
-
                 VStack(spacing: 0) {
-                    Rectangle()
-                        .fill(Color.black)
-                        .frame(width: 4, height: 4)
+                    Spacer().frame(height: barHeight + 4)  // skip bar area + connector
 
                     ExpandedContentView(
                         viewModel: viewModel,
                         state: PanelState(),
                         onClose: {
                             NotificationCenter.default.post(name: .init("IslandCollapse"), object: nil)
-                        }
+                        },
+                        hideMascot: true
                     )
                     .padding(.horizontal, 12)
-                    .padding(.top, 8)
                     .frame(height: contentHeight, alignment: .topLeading)
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -55,7 +56,10 @@ struct IslandBarView: View {
     private var noData: Bool { !viewModel.hasApiKey || viewModel.fiveHourLimit == nil }
     /// Fixed frame for each ring group — ring stays at the same spot whether text is shown or not.
     /// Ring center at 5+11 = 16px from edge (concentric with capsule corner radius 16).
-    private let groupWidth: CGFloat = 56
+    /// When expanded, 2px more inward and 2px down for breathing room.
+    private var groupWidth: CGFloat { islandState.isExpanded ? 58 : 56 }
+    private var edgePad: CGFloat { islandState.isExpanded ? 7 : 5 }
+    private var yShift: CGFloat { islandState.isExpanded ? 2 : 0 }
 
     var body: some View {
         HStack(spacing: 0) {
@@ -76,7 +80,8 @@ struct IslandBarView: View {
             }
             .animation(.easeInOut(duration: 0.15), value: islandState.isHovered)
             .frame(width: groupWidth, alignment: .leading)
-            .padding(.leading, 5)
+            .padding(.leading, edgePad)
+            .offset(y: yShift)
 
             Spacer(minLength: 0)
 
@@ -102,7 +107,8 @@ struct IslandBarView: View {
             }
             .animation(.easeInOut(duration: 0.15), value: islandState.isHovered)
             .frame(width: groupWidth, alignment: .trailing)
-            .padding(.trailing, 5)
+            .padding(.trailing, edgePad)
+            .offset(y: yShift)
         }
     }
 

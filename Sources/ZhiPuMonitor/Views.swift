@@ -208,6 +208,7 @@ struct ExpandedContentView: View {
     @ObservedObject var state: PanelState
     @AppStorage("app_language") private var appLanguage: String = "zh"
     var onClose: (() -> Void)? = nil
+    var hideMascot: Bool = false
 
     private var mascotState: MascotState {
         if !viewModel.hasApiKey { return .noKey }
@@ -226,7 +227,9 @@ struct ExpandedContentView: View {
         VStack(alignment: .leading, spacing: 0) {
             // Header with mascot
             HStack(spacing: 8) {
-                PixelMascot(state: mascotState, percentage: viewModel.maxPercentage)
+                if !hideMascot {
+                    PixelMascot(state: mascotState, percentage: viewModel.maxPercentage)
+                }
                 Text(L.titleText)
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundColor(.white)
