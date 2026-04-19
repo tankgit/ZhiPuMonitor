@@ -147,7 +147,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private let islandBarWidth: CGFloat = 180
     private let islandBarHeight: CGFloat = 32
     private let islandGap: CGFloat = 4
-    private let islandExpandedContentHeight: CGFloat = 300
+    private let islandExpandedContentHeight: CGFloat = 260
     private let islandNoKeyContentHeight: CGFloat = 100
 
     func applicationDidFinishLaunching(_ notification: Notification) {

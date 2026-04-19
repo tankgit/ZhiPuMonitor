@@ -8,7 +8,7 @@ struct IslandRootView: View {
     let notchInfo: NotchInfo
 
     private let barHeight: CGFloat = 32
-    private let expandedContentHeight: CGFloat = 300
+    private let expandedContentHeight: CGFloat = 260
     private let noKeyContentHeight: CGFloat = 100
 
     var body: some View {
