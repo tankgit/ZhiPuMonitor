@@ -92,7 +92,7 @@ Help me install ZBar, a macOS menu bar app. Read the instructions from this GitH
 
 ### Manual Install
 
-Download the latest release from the [Releases](https://github.com/tankgit/ZhiPuMonitor/releases/latest) page, then drag `ZBar.app` to `/Applications`.
+Download `ZBar.dmg` from the [Releases](https://github.com/tankgit/ZhiPuMonitor/releases/latest) page, open it, and drag **ZBar** into the **Applications** folder.
 
 ## Getting Started
 
