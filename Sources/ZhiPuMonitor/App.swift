@@ -630,26 +630,103 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         islandState.isEnabled = enabled
 
         if enabled {
-            // Switch to island mode
+            // Switch to island mode: notch shrinks horizontally, then capsule slides down
             if notchInfo == nil {
                 notchInfo = NotchInfo.detect() ?? NotchInfo.fallback()
             }
-            panel?.orderOut(nil)
             if islandPanel == nil {
                 setupIslandPanel()
             }
-            islandPanel?.setFrame(islandBarFrame(), display: true)
-            islandPanel?.orderFront(nil)
-            islandState.isBarVisible = true
-            islandState.isHovered = false
-            islandState.isExpanded = false
+
+            // 1) Shrink notch horizontally to zero width
+            let info = notchInfo!
+            let vanishFrame = NSRect(
+                x: info.centerX,
+                y: info.screenTopY - info.menuBarHeight,
+                width: 0,
+                height: topExtra + info.menuBarHeight
+            )
+            NSAnimationContext.runAnimationGroup({ ctx in
+                ctx.duration = 0.2
+                ctx.timingFunction = CAMediaTimingFunction(name: .easeIn)
+                self.panel?.animator().setFrame(vanishFrame, display: true)
+            }, completionHandler: {
+                self.panel?.orderOut(nil)
+
+                // 2) Slide capsule down from notch area
+                let barFrame = self.islandBarFrame()
+                let startY = info.screenTopY - info.menuBarHeight + self.islandGap
+                let startFrame = NSRect(
+                    x: info.centerX - self.islandBarWidth / 2,
+                    y: startY,
+                    width: self.islandBarWidth,
+                    height: self.islandBarHeight
+                )
+                self.islandPanel?.setFrame(startFrame, display: true)
+                self.islandPanel?.orderFront(nil)
+                self.islandState.isBarVisible = true
+                self.islandState.isHovered = false
+                self.islandState.isExpanded = false
+
+                NSAnimationContext.runAnimationGroup { ctx in
+                    ctx.duration = 0.25
+                    ctx.timingFunction = CAMediaTimingFunction(name: .easeOut)
+                    self.islandPanel?.animator().setFrame(barFrame, display: true)
+                }
+            })
         } else {
-            // Switch to notch mode
-            islandPanel?.orderOut(nil)
+            // Switch to notch mode: capsule slides up into notch, then notch expands horizontally
             islandState.isBarVisible = false
             islandState.isHovered = false
             islandState.isExpanded = false
-            panel?.orderFront(nil)
+
+            // Ensure notch panel exists
+            if panel == nil {
+                if let info = NotchInfo.detect() {
+                    notchInfo = info
+                    setupPanel()
+                } else {
+                    // No notch available — stay in island mode
+                    UserDefaults.standard.set(true, forKey: "island_mode_enabled")
+                    islandState.isEnabled = true
+                    islandState.isBarVisible = true
+                    return
+                }
+            }
+
+            let info = notchInfo!
+
+            // 1) Slide capsule up into notch area
+            let hideFrame = NSRect(
+                x: info.centerX - islandBarWidth / 2,
+                y: info.screenTopY - info.menuBarHeight + islandGap,
+                width: islandBarWidth,
+                height: islandBarHeight
+            )
+            NSAnimationContext.runAnimationGroup({ ctx in
+                ctx.duration = 0.2
+                ctx.timingFunction = CAMediaTimingFunction(name: .easeIn)
+                self.islandPanel?.animator().setFrame(hideFrame, display: true)
+            }, completionHandler: {
+                self.islandPanel?.orderOut(nil)
+
+                // 2) Expand notch from zero width to full
+                let compactFrame = self.compactFrame()
+                let startFrame = NSRect(
+                    x: info.centerX,
+                    y: info.screenTopY - info.menuBarHeight,
+                    width: 0,
+                    height: self.topExtra + info.menuBarHeight
+                )
+                self.panel?.setFrame(startFrame, display: true)
+                self.panel?.orderFront(nil)
+
+                NSAnimationContext.runAnimationGroup { ctx in
+                    ctx.duration = 0.25
+                    ctx.timingFunction = CAMediaTimingFunction(name: .easeOut)
+                    self.panel?.animator().setFrame(compactFrame, display: true)
+                }
+            })
         }
     }
 
