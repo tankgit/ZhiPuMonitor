@@ -88,10 +88,10 @@
 
 ### AI 辅助安装
 
-复制下方 prompt 粘贴给任意 AI 助手（Claude、ChatGPT 等），它会一步步引导你完成安装：
+复制下方 prompt 粘贴给任意 AI 助手（Claude、ChatGPT 等），它会自动帮你完成安装：
 
 ```
-Help me install ZBar, a macOS menu bar app. Read the instructions from this GitHub README and guide me step by step: https://github.com/tankgit/ZhiPuMonitor/blob/main/README.md
+Install ZBar, a macOS menu bar app, on this machine. Follow the instructions from this GitHub README: https://github.com/tankgit/ZhiPuMonitor/blob/main/README.md
 ```
 
 ### 手动安装

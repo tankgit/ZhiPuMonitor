@@ -88,10 +88,10 @@ The pixel-art monster reacts to your usage: happy dancing when safe, sweating wh
 
 ### AI-Assisted Install
 
-Copy the prompt below and paste it to any AI assistant (Claude, ChatGPT, etc.) — it will guide you through the installation:
+Copy the prompt below and paste it to any AI assistant (Claude, ChatGPT, etc.) — it will automatically install ZBar for you:
 
 ```
-Help me install ZBar, a macOS menu bar app. Read the instructions from this GitHub README and guide me step by step: https://github.com/tankgit/ZhiPuMonitor/blob/main/README.md
+Install ZBar, a macOS menu bar app, on this machine. Follow the instructions from this GitHub README: https://github.com/tankgit/ZhiPuMonitor/blob/main/README.md
 ```
 
 ### Manual Install
